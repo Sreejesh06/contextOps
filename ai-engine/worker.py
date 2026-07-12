@@ -43,7 +43,7 @@ tool_node = ToolNode(tools)
 class MessagesState(TypedDict):
     messages: Annotated[list, add_messages]
 
-llm = ChatGroq(model="llama3-70b-8192")
+llm = ChatGroq(model="llama-3.3-70b-versatile")
 llm_with_tools = llm.bind_tools(tools)
 
 def agent_node(state: MessagesState):
