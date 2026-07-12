@@ -52,6 +52,8 @@ app.post('/api/webhooks/pagerduty', async (req, res) => {
 // Create HTTP server
 const server = http.createServer(app);
 
+import Redis from 'ioredis';
+
 // Initialize WebSocket server on the same HTTP server, but user said "on port 8080"
 // I will bind it to the same server that will listen on 8080
 const wss = new WebSocketServer({ server });
@@ -62,6 +64,32 @@ wss.on('connection', (ws) => {
     console.log('Received:', message.toString());
   });
 });
+
+// Setup Redis subscriber to broadcast updates to WebSockets
+const redisSubscriber = new Redis({
+  host: redisOptions.host,
+  port: redisOptions.port
+});
+
+redisSubscriber.on('error', (err) => console.error('Redis Subscriber Error', err));
+
+async function setupRedisSubscriber() {
+  console.log('Connected to Redis Pub/Sub');
+  
+  await redisSubscriber.subscribe('incident_updates');
+  redisSubscriber.on('message', (channel, message) => {
+    if (channel === 'incident_updates') {
+      console.log(`[Redis] Received: ${message}`);
+      // Broadcast to all connected WebSocket clients
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          client.send(message);
+        }
+      });
+    }
+  });
+}
+setupRedisSubscriber();
 
 // Start the server
 const PORT = process.env.PORT || 8080;
