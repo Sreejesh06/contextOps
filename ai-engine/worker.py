@@ -20,6 +20,15 @@ load_dotenv()
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+DB_URL = os.getenv("DATABASE_URL", "dbname=contextops user=postgres")
+
+import psycopg2
+from pgvector.psycopg2 import register_vector
+from langchain_huggingface import HuggingFaceEmbeddings
+
+# Initialize embedding model for RAG
+print("Loading embeddings model...")
+embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # ---------------------------------------------------------
 # 1. Mock Tools
@@ -32,7 +41,24 @@ def search_github_prs(service_name: str) -> str:
 @tool
 def search_runbooks(error_type: str) -> str:
     """Searches runbooks for a specific error type."""
-    return f"Runbook says {error_type} usually requires reverting recent PRs."
+    vector = embeddings_model.embed_query(error_type)
+    
+    try:
+        conn = psycopg2.connect(DB_URL)
+        register_vector(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT content FROM KnowledgeBase ORDER BY embedding <-> %s LIMIT 1;",
+                (vector,)
+            )
+            result = cur.fetchone()
+        conn.close()
+        
+        if result:
+            return result[0]
+        return f"No relevant runbooks found for {error_type}."
+    except Exception as e:
+        return f"Error searching runbooks: {e}"
 
 tools = [search_github_prs, search_runbooks]
 tool_node = ToolNode(tools)

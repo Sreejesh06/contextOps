@@ -5,3 +5,8 @@ bullmq
 langgraph
 langchain-groq
 python-dotenv
+langchain-huggingface
+langchain-community
+sentence-transformers
+psycopg2-binary
+pgvector

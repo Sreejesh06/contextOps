@@ -1,0 +1,2 @@
+- `ts-node` is incompatible with Node v22+. Use `tsc && node` (or `tsx`) instead to avoid `TypeError: Cannot read properties of undefined (reading 'fileExists')`.
+- Ensure local Postgres connection strings point to Docker containers with `pgvector` enabled (e.g. custom port), not the default Homebrew Postgres on `5432` which lacks the extension.
