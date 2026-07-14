@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060A1C" />
+      <stop offset="50%" stop-color="#121D47" />
+      <stop offset="100%" stop-color="#060A1C" />
+    </linearGradient>
+
+    <!-- Halftone Texture -->
+    <pattern id="halftone" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
+      <circle cx="5" cy="5" r="2.2" fill="#E11D48" />
+      <circle cx="1" cy="9" r="1.5" fill="#F59E0B" opacity="0.6" />
+    </pattern>
+
+    <!-- Fade Masks for Halftone -->
+    <linearGradient id="fadeLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+      <stop offset="80%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+    <mask id="maskLeft">
+      <rect x="0" y="0" width="400" height="300" fill="url(#fadeLeft)" />
+    </mask>
+
+    <linearGradient id="fadeRight" x1="100%" y1="0%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+      <stop offset="80%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+    <mask id="maskRight">
+      <rect x="800" y="0" width="400" height="300" fill="url(#fadeRight)" />
+    </mask>
+
+    <!-- Drop Shadow for 3D Isometric Depth -->
+    <filter id="drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="8" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+
+    <!-- Tile Base -->
+    <g id="tile-base" filter="url(#drop-shadow)">
+      <!-- Top Face (Rhombus) -->
+      <path d="M 0,-25 L 40,0 L 0,25 L -40,0 Z" fill="#F1F5F9" />
+      <!-- Left Depth Face -->
+      <path d="M -40,0 L 0,25 L 0,35 L -40,10 Z" fill="#94A3B8" />
+      <!-- Right Depth Face -->
+      <path d="M 0,25 L 40,0 L 40,10 L 0,35 Z" fill="#475569" />
+    </g>
+
+    <!-- SVG Logos precisely mapped onto Isometric Top Face -->
+    <g id="tile-gh">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <circle cx="0" cy="0" r="15" fill="#1B1F23" />
+        <path d="M 0,-8 C -4.5,-8 -8,-4.5 -8,0 C -8,3.5 -5.7,6.5 -2.6,7.6 C -2.2,7.7 -2.0,7.4 -2.0,7.2 L -2.0,5.7 C -4.2,6.2 -4.7,4.6 -4.7,4.6 C -5.0,3.8 -5.5,3.6 -5.5,3.6 C -6.2,3.1 -5.4,3.1 -5.4,3.1 C -4.6,3.2 -4.2,4.0 -4.2,4.0 C -3.5,5.2 -2.4,4.9 -2.0,4.7 C -1.9,4.2 -1.6,3.9 -1.3,3.7 C -3.1,3.5 -5.0,2.8 -5.0,-0.3 C -5.0,-1.2 -4.7,-1.9 -4.2,-2.4 C -4.3,-2.6 -4.5,-3.4 -4.1,-4.3 C -4.1,-4.3 -3.4,-4.5 -2.0,-3.6 C -1.4,-3.8 -0.7,-3.9 0,-3.9 C 0.7,-3.9 1.4,-3.8 2.0,-3.6 C 3.4,-4.5 4.1,-4.3 4.1,-4.3 C 4.5,-3.4 4.3,-2.6 4.2,-2.4 C 4.7,-1.9 5.0,-1.2 5.0,-0.3 C 5.0,2.8 3.1,3.5 1.3,3.7 C 1.6,3.9 1.9,4.4 1.9,4.9 L 1.9,7.2 C 1.9,7.4 2.1,7.7 2.6,7.6 C 5.7,6.5 8.0,3.5 8.0,0 C 8.0,-4.5 4.5,-8 0,-8 Z" fill="#FFFFFF" />
+      </g>
+    </g>
+
+    <g id="tile-zoom">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <rect x="-15" y="-15" width="30" height="30" rx="6" fill="#2D8CFF" />
+        <path d="M -8,-5 L 2,-5 L 2,5 L -8,5 Z M 4,-2 L 9,-5 L 9,5 L 4,2 Z" fill="#FFFFFF" />
+      </g>
+    </g>
+
+    <g id="tile-figma">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <path d="M -4,-12 C -6.2,-12 -8,-10.2 -8,-8 C -8,-5.8 -6.2,-4 -4,-4 L 0,-4 L 0,-12 Z" fill="#F24E1E" />
+        <path d="M 4,-12 C 1.8,-12 0,-10.2 0,-8 C 0,-5.8 1.8,-4 4,-4 C 6.2,-4 8,-5.8 8,-8 C 8,-10.2 6.2,-12 4,-12 Z" fill="#FF7262" />
+        <path d="M -4,-4 C -6.2,-4 -8,-2.2 -8,0 C -8,2.2 -6.2,4 -4,4 L 0,4 L 0,-4 Z" fill="#A259FF" />
+        <path d="M 4,-4 C 1.8,-4 0,-2.2 0,0 C 0,2.2 1.8,4 4,4 C 6.2,4 8,2.2 8,0 C 8,-2.2 6.2,-4 4,-4 Z" fill="#1ABCFE" />
+        <path d="M -4,4 C -6.2,4 -8,5.8 -8,8 C -8,10.2 -6.2,12 -4,12 C -1.8,12 0,10.2 0,8 L 0,4 Z" fill="#0ACF83" />
+      </g>
+    </g>
+
+    <g id="tile-trello">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <rect x="-15" y="-15" width="30" height="30" rx="4" fill="#0079BF" />
+        <rect x="-9" y="-9" width="7" height="13" rx="1" fill="#FFFFFF" />
+        <rect x="2" y="-9" width="7" height="18" rx="1" fill="#FFFFFF" />
+      </g>
+    </g>
+
+    <g id="tile-notion">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <rect x="-14" y="-14" width="28" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="2" />
+        <text x="0" y="6" font-family="'Times New Roman', serif" font-size="18" font-weight="bold" fill="#000000" text-anchor="middle">N</text>
+      </g>
+    </g>
+
+    <g id="tile-stripe">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <rect x="-15" y="-15" width="30" height="30" rx="4" fill="#635BFF" />
+        <text x="0" y="4" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#FFFFFF" text-anchor="middle">stripe</text>
+      </g>
+    </g>
+
+    <g id="tile-dd">
+      <use href="#tile-base" />
+      <g transform="scale(1, 0.625) rotate(45)">
+        <rect x="-15" y="-15" width="30" height="30" rx="4" fill="#632CA6" />
+        <path d="M -7,7 L -7,0 L -2,-4 L 3,0 L 3,7" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" />
+        <circle cx="7" cy="-4" r="2" fill="#FFFFFF" />
+      </g>
+    </g>
+  </defs>
+
+  <!-- Render Background -->
+  <rect x="0" y="0" width="1200" height="300" fill="url(#bg)" />
+
+  <!-- Render Edge Halftones -->
+  <rect x="0" y="0" width="400" height="300" fill="url(#halftone)" mask="url(#maskLeft)" />
+  <rect x="800" y="0" width="400" height="300" fill="url(#halftone)" mask="url(#maskRight)" />
+
+
+  <!-- Render Isometric Left Tile Chevron (Sorted by Y-coordinate for correct overlapping depth) -->
+  <use href="#tile-notion" x="70" y="30" />
+  
+  <use href="#tile-gh" x="140" y="70" />
+  <use href="#tile-figma" x="70" y="70" />
+  
+  <use href="#tile-zoom" x="210" y="110" />
+  <use href="#tile-stripe" x="140" y="110" />
+  <use href="#tile-dd" x="70" y="110" />
+  
+  <use href="#tile-trello" x="280" y="150" />
+  <use href="#tile-gh" x="210" y="150" />
+  <use href="#tile-trello" x="140" y="150" />
+  <use href="#tile-zoom" x="70" y="150" />
+  
+  <use href="#tile-figma" x="210" y="190" />
+  <use href="#tile-zoom" x="140" y="190" />
+  <use href="#tile-figma" x="70" y="190" />
+  
+  <use href="#tile-dd" x="140" y="230" />
+  <use href="#tile-notion" x="70" y="230" />
+  
+  <use href="#tile-stripe" x="70" y="270" />
+
+  <!-- Render Isometric Right Tile Chevron (Sorted by Y-coordinate for correct overlapping depth) -->
+  <use href="#tile-figma" x="1130" y="30" />
+  
+  <use href="#tile-dd" x="1060" y="70" />
+  <use href="#tile-gh" x="1130" y="70" />
+  
+  <use href="#tile-stripe" x="990" y="110" />
+  <use href="#tile-figma" x="1060" y="110" />
+  <use href="#tile-trello" x="1130" y="110" />
+  
+  <use href="#tile-notion" x="920" y="150" />
+  <use href="#tile-dd" x="990" y="150" />
+  <use href="#tile-zoom" x="1060" y="150" />
+  <use href="#tile-figma" x="1130" y="150" />
+  
+  <use href="#tile-zoom" x="990" y="190" />
+  <use href="#tile-notion" x="1060" y="190" />
+  <use href="#tile-dd" x="1130" y="190" />
+  
+  <use href="#tile-trello" x="1060" y="230" />
+  <use href="#tile-stripe" x="1130" y="230" />
+  
+  <use href="#tile-gh" x="1130" y="270" />
+
+  <!-- Render Central Typography and Branding -->
+  <g transform="translate(600, 130)">
+    <!-- Stylized ContextOps C Logo -->
+    <g transform="translate(-180, 0)">
+      <path d="M -20,-18 L 10,-18 C 15,-18 20,-13 20,-8 C 20,-3 15,2 10,2 L -20,2 Z" fill="#FFFFFF" />
+      <path d="M -20,-6 L 0,-6 C 5,-6 10,-1 10,4 C 10,9 5,14 0,14 L -20,14 Z" fill="#FFFFFF" opacity="0.75" />
+      <path d="M -20,6 L 15,6 C 20,6 25,11 25,16 C 25,21 20,26 15,26 L -20,26 Z" fill="#FFFFFF" opacity="0.5" />
+    </g>
+
+    <!-- ContextOps Core Typography -->
+    <text x="-135" y="18" font-family="'Inter', system-ui, sans-serif" font-size="64" font-weight="900" fill="#FFFFFF" letter-spacing="-0.04em" text-anchor="start">ContextOps</text>
+    
+    <!-- Subtitle mapping to the Composio "Skills that evolve for your Agents" structure -->
+    <text x="0" y="70" font-family="'Inter', system-ui, sans-serif" font-size="22" fill="#CBD5E1" text-anchor="middle" font-weight="400" letter-spacing="0.01em">
+      Context that <tspan font-family="'Playfair Display', Georgia, serif" font-style="italic" font-weight="600" fill="#FFFFFF">resolves</tspan> for your <tspan font-family="'Playfair Display', Georgia, serif" font-style="italic" font-weight="600" fill="#FFFFFF">Engineers</tspan>
+    </text>
+  </g>
+</svg>
