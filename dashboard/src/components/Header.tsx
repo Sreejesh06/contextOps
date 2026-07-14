@@ -1,4 +1,5 @@
 import { Notification02Icon } from "hugeicons-react";
+import { SignInButton, Show, UserButton } from '@clerk/nextjs';
 
 export default function Header() {
   return (
@@ -29,6 +30,23 @@ export default function Header() {
           <Notification02Icon className="w-5 h-5 text-white/80" />
           <span className="absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full bg-red-500 neon-icon"></span>
         </button>
+        <div className="w-px h-10 bg-white/10 mx-2"></div>
+        <Show when="signed-out">
+          <SignInButton mode="modal">
+            <button className="glass-panel px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-colors border border-white/10">
+              Sign In
+            </button>
+          </SignInButton>
+        </Show>
+        <Show when="signed-in">
+          <UserButton 
+            appearance={{
+              elements: {
+                userButtonAvatarBox: "w-10 h-10 rounded-xl border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]",
+              }
+            }}
+          />
+        </Show>
       </div>
     </header>
   );
