@@ -1,77 +1,138 @@
-<div align="center">
-  <br />
-  <h1>ContextOps</h1>
-  <p><strong>AI-Native Incident Triager</strong></p>
-  <br />
-</div>
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="ContextOps Integration Ecosystem" width="100%"/>
+</p>
 
-![ContextOps Demo](./demo.gif)
+<p align="center">
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License"/>
+  <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=for-the-badge" alt="PRs Welcome"/>
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/Node.js-000000?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"/>
+  <img src="https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-000000?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+  <img src="https://img.shields.io/badge/Redis-000000?style=for-the-badge&logo=redis&logoColor=white" alt="Redis"/>
+</p>
 
-## The Problem
+---
 
-At 3:00 AM, during a critical production outage, engineering teams face massive **Context Fragmentation**. 
-Alerts fire in PagerDuty, logs stream through Datadog, metrics spike in Grafana, and pull requests are scattered across GitHub. 
+## Overview
 
-ContextOps is the AI-native solution to this problem. It acts as an intelligent traffic cop and investigator, automatically fetching context across your entire infrastructure the second an incident is created, analyzing it using advanced AI, and providing actionable resolution steps directly in a stunning, real-time "Void Luxury" dashboard.
+ContextOps is an automated incident response engine. It fetches infrastructure context across monitoring tools, evaluates telemetry data using LangGraph and Model Context Protocol (MCP) integrations, and provides validated resolution protocols via Retrieval-Augmented Generation (RAG).
+
+<p align="center">
+  <video autoplay loop muted playsinline controls width="100%">
+    <source src="docs/assets/project.mp4" type="video/mp4">
+  </video>
+</p>
+
+## Core Capabilities
+
+- **Stateful Triaging**: Implements continuous event loops using LangGraph to analyze complex telemetry spanning multiple decoupled systems.
+- **Vector-Grounded Resolution**: Executes cosine-similarity searches via `pgvector` to anchor mitigation strategies in organizational runbooks, eliminating hallucination.
+- **Real-Time Streaming**: Broadcasts state mutations and resolution vectors instantaneously via WebSocket and Redis Pub/Sub directly to the client interface.
+- **Extensible Integration**: Interfaces with existing monitoring infrastructure (PagerDuty, Datadog) through the standardized Model Context Protocol (MCP).
+
+## Context Fragmentation
+
+During critical outages, engineering telemetry is distributed across decoupled systems (PagerDuty, Datadog, Grafana, GitHub). This state, defined as context fragmentation, increases Mean Time to Resolution (MTTR).
+
+| Manual Triaging | ContextOps Engine |
+| :--- | :--- |
+| **T+00:00** - PagerDuty alert initiates incident. | **T+00:00** - PagerDuty webhook initiates ContextOps pipeline. |
+| **T+05:00** - Engineer parses Datadog logs manually. | **T+00:02** - MCP integrations fetch telemetry and recent PRs. |
+| **T+15:00** - Engineer queries internal wiki for runbooks. | **T+00:05** - RAG pipeline retrieves vector-matched runbooks. |
+| **T+30:00** - Engineer executes mitigation protocol. | **T+00:08** - Actionable context streamed to dashboard. |
+
+## Intelligence Layer
+
+<img align="right" width="220" src="docs/assets/logo.svg" alt="ContextOps Core Engine" />
+
+The execution environment utilizes state-of-the-art agentic frameworks to enforce deterministic operational protocols:
+
+- **LangChain**: Provides the foundational interface for LLM communication, structuring prompts, and parsing complex JSON telemetry payloads.
+- **LangGraph**: Orchestrates the cyclic, stateful reasoning loop. It acts as the cognitive traffic controller, dynamically deciding whether to execute further Model Context Protocol (MCP) tool calls (e.g., fetching additional GitHub commits) or synthesize a final mitigation strategy.
+- **Retrieval-Augmented Generation (RAG)**: Grounds the agent in proprietary organizational data. The system embeds incident error traces and performs cosine-similarity vector searches against a PostgreSQL (`pgvector`) database containing the organization's historical runbooks.
 
 ## System Architecture
 
-ContextOps operates on a robust, highly-concurrent 3-tier distributed architecture:
+The platform operates on a decoupled event-driven architecture, separating the client state, message broker, and AI execution layers.
 
-- **Frontend (Next.js / The Glass)**: A gorgeous, real-time dashboard built with React and Tailwind CSS. It connects via WebSockets to instantly stream AI investigation timelines to engineers without refreshing.
-- **Message Broker & API (Node.js)**: The central nervous system. It receives webhooks (e.g., from PagerDuty), queues jobs in Redis using BullMQ, and manages WebSocket connections to push updates to the UI in real-time.
-- **AI Engine (Python / FastAPI)**: Powered by LangGraph, this intelligent agent processes incidents asynchronously. It orchestrates tool calls via the Model Context Protocol (MCP) and performs Retrieval-Augmented Generation (RAG).
+```mermaid
+graph TD
+    Webhook[PagerDuty Webhook] -->|HTTP POST| API[Node.js Broker API]
+    
+    API -->|WebSocket Stream| UI[Next.js Dashboard]
+    API -->|Enqueue Incident| Queue[(Redis BullMQ)]
+    API -->|Subscribe State| State[(Redis Pub/Sub)]
+    State -->|State Updates| API
+    
+    Queue -->|Consume Job| Agent{Python LangGraph Engine}
+    Agent -->|Publish State| State
+    
+    Agent -->|Vector Retrieval| DB[(PostgreSQL + pgvector)]
+    Agent -->|MCP Tool Calls| Tools[GitHub and Datadog APIs]
 
-## AI & Data Layer
+    classDef default fill:#020617,stroke:#334155,stroke-width:2px,color:#f8fafc;
+    classDef database fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
+    class Queue,State,DB database;
+```
 
-ContextOps does not just hallucinate answers. It is grounded in *your* engineering truth:
+## Local Environment Configuration
 
-- **Agentic Workflows**: Utilizing **LangGraph**, the agent dynamically decides which tools to call (e.g., searching recent GitHub PRs, checking logs) based on the incident description.
-- **Retrieval-Augmented Generation (RAG)**: The AI engine relies on standard **PostgreSQL** enriched with the **pgvector** extension. When an incident occurs, the agent computes vector embeddings of the error locally using `sentence-transformers/all-MiniLM-L6-v2` and queries the database for the exact, proprietary Runbook steps to resolve the issue.
+Execute the following commands to initialize the required services.
 
-## Local Development
+### 1. Provision Infrastructure
 
-Follow these steps to spin up the ContextOps environment locally.
+Initialize the Redis and PostgreSQL containers.
 
-### 1. Start Infrastructure
-Make sure Docker is running, then spin up the required Redis and PostgreSQL instances:
 ```bash
 docker compose up -d
 ```
-*(If you are running PostgreSQL natively, ensure `pgvector` is installed and Redis is running on port 6379).*
 
-### 2. Ingest Proprietary Runbooks
-Seed the database with the runbook knowledge base.
+### 2. Configure Knowledge Base
+
+Install dependencies and compute embeddings for the proprietary runbooks.
+
 ```bash
 cd ai-engine
 pip install -r requirements.txt
 python ingest_runbooks.py
 ```
 
-### 3. Start the AI Worker
-The Python worker listens to the Redis queue for new incident jobs.
+### 3. Initialize Execution Layer
+
+Start the Python worker process.
+
 ```bash
 cd ai-engine
 python worker.py
 ```
 
-### 4. Start the Node.js Core API
-The central nervous system that orchestrates queues and WebSockets.
+### 4. Initialize Broker Layer
+
+Start the Node.js API server.
+
 ```bash
 cd core-api
 npm install
-npm run dev # or npm start
+npm run dev
 ```
 
-### 5. Start the Dashboard (Frontend)
-The sleek glassmorphism UI.
+### 5. Initialize Frontend Client
+
+Start the Next.js development server.
+
 ```bash
 cd dashboard
 npm install
 npm run dev
 ```
-Navigate to [http://localhost:3000](http://localhost:3000) and sign in using the provided Clerk authentication.
 
----
+Access the client interface at `http://localhost:3000`. Authenticate via the configured Clerk instance.
 
-*ContextOps: Stop searching. Start resolving.*
+## Contributing
+
+Engineering contributions are accepted via Pull Requests. Ensure all code passes formatting and linting checks prior to submission. Refer to `CONTRIBUTING.md` for architectural constraints.
+
+## License
+
+ContextOps is distributed under the MIT License. Refer to `LICENSE` for complete terms and conditions.
