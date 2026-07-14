@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  
+  body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #000; overflow: hidden; color: #fff; }
+  #viewport { width: 1200px; height: 600px; background: #000; position: relative; overflow: hidden; }
+  
+  /* Scene 1: The Trigger */
+  #s1-container {
+    position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+    display: flex; align-items: center; justify-content: center; opacity: 0;
+  }
+  .alert-box {
+    background: #111; border: 1px solid #333; border-radius: 8px; width: 600px; padding: 24px;
+    box-shadow: 0 0 50px rgba(239, 68, 68, 0.2);
+  }
+  .alert-header { color: #ef4444; font-size: 20px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap:12px; }
+  .flash-dot { width: 12px; height: 12px; background: #ef4444; border-radius: 50%; }
+  .alert-body { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #a3a3a3; line-height: 1.6; }
+  .alert-red { color: #ef4444; }
+  
+  /* Scene 2: The Brain Wakes Up */
+  #s2-terminal {
+    position: absolute; top: 100px; left: 150px; width: 900px; height: 400px;
+    background: #050505; border: 1px solid #222; border-radius: 8px; opacity: 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 16px; color: #a3a3a3; padding: 24px;
+    box-sizing: border-box; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+  }
+  .term-header { font-size: 12px; color: #666; border-bottom: 1px solid #222; padding-bottom: 12px; margin-bottom: 16px; }
+  .term-line { margin-bottom: 12px; opacity: 0; }
+  .term-blue { color: #60a5fa; }
+  .term-green { color: #10b981; }
+  
+  /* Scene 3: The Architecture */
+  #s3-split {
+    position: absolute; top: 100px; left: 100px; width: 1000px; height: 400px;
+    display: flex; gap: 40px; opacity: 0;
+  }
+  .split-pane { flex: 1; background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 24px; position: relative; overflow: hidden; }
+  .pane-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 12px; }
+  
+  /* Vector visuals */
+  .vec-item { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; opacity: 0; }
+  .vec-bar { height: 4px; background: #333; flex: 1; border-radius: 2px; position: relative; overflow: hidden; }
+  .vec-fill { height: 100%; background: #60a5fa; width: 0%; }
+  
+  /* Redis Stream */
+  .stream-msg { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #888; margin-bottom: 8px; padding: 8px; background: #111; border-radius: 4px; border-left: 2px solid #a855f7; opacity: 0; transform: translateX(20px); }
+  
+  /* Scene 4: Void Luxury Dashboard */
+  #s4-dashboard {
+    position: absolute; top: 50px; left: 100px; width: 1000px; height: 500px;
+    background: linear-gradient(180deg, #0f0f13, #050505);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; opacity: 0;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    display: flex; flex-direction: column;
+  }
+  .dash-top { height: 60px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 24px; gap: 16px; }
+  .dash-content { padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+  
+  .root-cause { font-size: 24px; font-weight: 300; margin-bottom: 40px; text-align: center; }
+  
+  .action-btn {
+    background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399; font-size: 16px; font-weight: 500; font-family: 'JetBrains Mono', monospace;
+    padding: 16px 32px; border-radius: 8px;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+  }
+</style>
+</head>
+<body>
+<div id="viewport">
+  
+  <!-- S1 -->
+  <div id="s1-container">
+    <div class="alert-box">
+      <div class="alert-header">
+        <div class="flash-dot" id="s1-dot"></div>
+        PAGERDUTY CRITICAL ALERT
+      </div>
+      <div class="alert-body">
+        [Datadog] <span class="alert-red">500 Internal Server Error Spike</span><br>
+        Service: core-api<br>
+        Timestamp: 03:00:12 UTC<br><br>
+        > Latency degraded by 4500ms.<br>
+        > Database connection pool exhausted.
+      </div>
+    </div>
+  </div>
+  
+  <!-- S2 -->
+  <div id="s2-terminal">
+    <div class="term-header">contextops-agent-worker-1</div>
+    <div class="term-line" id="t-1"><span class="term-blue">INFO</span>: Incident received. Initiating ContextOps Agent...</div>
+    <div class="term-line" id="t-2"><span class="term-blue">EXEC</span>: Calling GitHub MCP tool...</div>
+    <div class="term-line" id="t-3"> > Found recent merge: "PR #999 - Update pgvector indexes"</div>
+    <div class="term-line" id="t-4"><span class="term-blue">EXEC</span>: Calling Datadog MCP tool...</div>
+    <div class="term-line" id="t-5"> > Correlation found: Latency spike started exactly after PR #999 merge.</div>
+    <div class="term-line" id="t-6"><span class="term-blue">EXEC</span>: Reading Runbook via pgvector...</div>
+    <div class="term-line" id="t-7"><span class="term-green">SUCCESS</span>: Runbook matched. Generating resolution plan.</div>
+  </div>
+  
+  <!-- S3 -->
+  <div id="s3-split">
+    <div class="split-pane">
+      <div class="pane-title">pgvector Semantic Search</div>
+      <div class="vec-item" id="v-1"><div>[0.12, -0.4, ...]</div><div class="vec-bar"><div class="vec-fill" style="width:20%"></div></div></div>
+      <div class="vec-item" id="v-2"><div>[0.85,  0.2, ...]</div><div class="vec-bar"><div class="vec-fill" id="vf-2" style="width:0%; background:#10b981;"></div></div><div>MATCH</div></div>
+      <div class="vec-item" id="v-3"><div>[-0.1,  0.9, ...]</div><div class="vec-bar"><div class="vec-fill" style="width:30%"></div></div></div>
+    </div>
+    <div class="split-pane">
+      <div class="pane-title">Redis Pub/Sub -> WebSocket</div>
+      <div id="stream-container" style="display:flex; flex-direction:column; justify-content:flex-end; height:280px;">
+        <div class="stream-msg" id="sm-1">{"event":"agent_thought","data":"Correlating GitHub & Datadog..."}</div>
+        <div class="stream-msg" id="sm-2">{"event":"rag_query","data":"SELECT * FROM runbooks ORDER BY embedding <-> $1"}</div>
+        <div class="stream-msg" id="sm-3">{"event":"resolution_ready","data":{"action":"rollback","target":"PR #999"}}</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- S4 -->
+  <div id="s4-dashboard">
+    <div class="dash-top">
+      <div style="width:12px; height:12px; border-radius:50%; background:#333;"></div>
+      <div style="width:12px; height:12px; border-radius:50%; background:#333;"></div>
+      <div style="width:12px; height:12px; border-radius:50%; background:#333;"></div>
+      <div style="margin-left: 24px; font-weight:600; color:#fff;">ContextOps</div>
+    </div>
+    <div class="dash-content">
+      <div class="root-cause">Root Cause Identified: <strong style="color:#ef4444;">PR #999</strong> caused a full table scan.</div>
+      <div class="action-btn" id="s4-btn">> Rollback PR #999</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  
+  window.setFrame = function(t) {
+    const range = (start, end) => Math.min(Math.max((t - start) / (end - start), 0), 1);
+    
+    // Globals
+    let s1 = document.getElementById('s1-container');
+    let s2 = document.getElementById('s2-terminal');
+    let s3 = document.getElementById('s3-split');
+    let s4 = document.getElementById('s4-dashboard');
+    
+    // Scene 1 (0 to 6s = 0.0 to 0.20)
+    let t1_in = range(0.0, 0.02);
+    let t1_out = range(0.18, 0.20);
+    s1.style.opacity = t1_in - t1_out;
+    s1.style.transform = `scale(${1 + t * 0.1})`;
+    
+    // Flashing dot in S1
+    if (t < 0.2) {
+        document.getElementById('s1-dot').style.opacity = (t * 50) % 1 > 0.5 ? 1 : 0.2;
+    }
+    
+    // Scene 2 (6s to 14s = 0.20 to 0.46)
+    let t2_in = range(0.20, 0.22);
+    let t2_out = range(0.44, 0.46);
+    s2.style.opacity = t2_in - t2_out;
+    s2.style.transform = `translateY(${20 * (1 - easeOut(t2_in))}px)`;
+    
+    // Terminal typing
+    const showTerm = (id, start) => {
+        document.getElementById(id).style.opacity = t >= start ? 1 : 0;
+    };
+    showTerm('t-1', 0.22);
+    showTerm('t-2', 0.26);
+    showTerm('t-3', 0.28);
+    showTerm('t-4', 0.32);
+    showTerm('t-5', 0.35);
+    showTerm('t-6', 0.39);
+    showTerm('t-7', 0.43);
+    
+    // Scene 3 (14s to 22s = 0.46 to 0.73)
+    let t3_in = range(0.46, 0.48);
+    let t3_out = range(0.71, 0.73);
+    s3.style.opacity = t3_in - t3_out;
+    s3.style.transform = `scale(${0.95 + 0.05*easeOut(t3_in)})`;
+    
+    // Vector search anim
+    document.getElementById('v-1').style.opacity = range(0.48, 0.50);
+    document.getElementById('v-2').style.opacity = range(0.50, 0.52);
+    document.getElementById('v-3').style.opacity = range(0.52, 0.54);
+    
+    let v2_match = range(0.55, 0.60);
+    document.getElementById('vf-2').style.width = `${easeOut(v2_match) * 90}%`;
+    
+    // Stream anim
+    const showStream = (id, start) => {
+        let st = range(start, start + 0.02);
+        let el = document.getElementById(id);
+        el.style.opacity = st;
+        el.style.transform = `translateX(${20 * (1 - easeOut(st))}px)`;
+    };
+    showStream('sm-1', 0.50);
+    showStream('sm-2', 0.56);
+    showStream('sm-3', 0.65);
+    
+    // Scene 4 (22s to 30s = 0.73 to 1.0)
+    let t4_in = range(0.73, 0.78);
+    s4.style.opacity = t4_in;
+    s4.style.transform = `translateY(${50 * (1 - easeOut(t4_in))}px)`;
+    
+    // Button glow pulse
+    if (t > 0.78) {
+        let pulse = Math.sin((t - 0.78) * 40);
+        document.getElementById('s4-btn').style.boxShadow = `0 0 ${30 + pulse*20}px rgba(16, 185, 129, ${0.4 + pulse*0.2})`;
+    }
+  }
+</script>
+</body>
+</html>
