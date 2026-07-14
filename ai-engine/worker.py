@@ -13,13 +13,17 @@ from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
-from langgraph.prebuilt import ToolNode
+
+# MCP imports
+from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.session import ClientSession
 
 # Load environment variables
 load_dotenv()
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GITHUB_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 DB_URL = os.getenv("DATABASE_URL", "dbname=contextops user=postgres")
 
 import psycopg2
@@ -31,13 +35,8 @@ print("Loading embeddings model...")
 embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # ---------------------------------------------------------
-# 1. Mock Tools
+# 1. Local Tools
 # ---------------------------------------------------------
-@tool
-def search_github_prs(service_name: str) -> str:
-    """Searches Github for recent Pull Requests related to a service."""
-    return f"Found recent PR #999 changing database limits in {service_name}"
-
 @tool
 def search_runbooks(error_type: str) -> str:
     """Searches runbooks for a specific error type."""
@@ -60,40 +59,8 @@ def search_runbooks(error_type: str) -> str:
     except Exception as e:
         return f"Error searching runbooks: {e}"
 
-tools = [search_github_prs, search_runbooks]
-tool_node = ToolNode(tools)
-
 # ---------------------------------------------------------
-# 2. LangGraph Setup
-# ---------------------------------------------------------
-class MessagesState(TypedDict):
-    messages: Annotated[list, add_messages]
-
-llm = ChatGroq(model="llama-3.3-70b-versatile")
-llm_with_tools = llm.bind_tools(tools)
-
-def agent_node(state: MessagesState):
-    response = llm_with_tools.invoke(state["messages"])
-    return {"messages": [response]}
-
-def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
-    messages = state["messages"]
-    last_message = messages[-1]
-    if last_message.tool_calls:
-        return "tools"
-    return "__end__"
-
-workflow = StateGraph(MessagesState)
-workflow.add_node("agent", agent_node)
-workflow.add_node("tools", tool_node)
-workflow.add_edge(START, "agent")
-workflow.add_conditional_edges("agent", should_continue)
-workflow.add_edge("tools", "agent")
-
-app = workflow.compile()
-
-# ---------------------------------------------------------
-# 3. Redis Pub/Sub Client
+# 2. Redis Pub/Sub Client
 # ---------------------------------------------------------
 redis_pubsub = Redis.from_url(REDIS_URL)
 
@@ -105,76 +72,158 @@ async def publish_update(message_text: str):
     print(f"[Published]: {message_text}")
 
 # ---------------------------------------------------------
-# 4. Worker Process Function
-# ---------------------------------------------------------
-async def process_incident(job: Job, token: str):
-    print(f"\n[Worker] Picked up job {job.id}")
-    await publish_update(f"Started investigating incident {job.id}...")
-    
-    payload_str = json.dumps(job.data, indent=2)
-    prompt = f"An incident has been reported with the following payload:\n{payload_str}\n\nPlease investigate this using your tools."
-    
-    messages = [HumanMessage(content=prompt)]
-    
-    try:
-        # Stream events from LangGraph
-        async for event in app.astream({"messages": messages}, stream_mode="updates"):
-            for node, state_update in event.items():
-                
-                # Get the message(s) from this node update
-                msgs = state_update.get("messages", [])
-                if not isinstance(msgs, list):
-                    msgs = [msgs]
-                
-                for msg in msgs:
-                    if isinstance(msg, AIMessage):
-                        if msg.content:
-                            await publish_update(f"AI: {msg.content}")
-                        if getattr(msg, 'tool_calls', None):
-                            for tool_call in msg.tool_calls:
-                                await publish_update(f"Calling tool '{tool_call['name']}' with args: {tool_call['args']}")
-                    
-                    elif isinstance(msg, ToolMessage):
-                        await publish_update(f"Tool '{msg.name}' returned: {msg.content}")
-
-    except Exception as e:
-        error_msg = f"Error during investigation: {str(e)}"
-        print(error_msg)
-        await publish_update(error_msg)
-        return {"status": "error", "error": error_msg}
-    
-    await publish_update(f"Investigation complete for job {job.id}.")
-    return {"status": "success"}
-
-# ---------------------------------------------------------
-# 5. Main Worker Loop
+# 3. Worker Initialization logic
 # ---------------------------------------------------------
 async def main():
     if not GROQ_API_KEY:
         print("WARNING: GROQ_API_KEY environment variable is missing. The agent will fail.")
-        
+    if not GITHUB_TOKEN:
+        print("WARNING: GITHUB_PERSONAL_ACCESS_TOKEN is missing. MCP GitHub tools may fail.")
+
     print("Starting AI Brain worker...")
     
-    redis_opts = {
-        "host": "localhost",
-        "port": 6379,
-    }
-    
-    worker = Worker(
-        "incident-investigation-queue",
-        process_incident,
-        {"connection": redis_opts}
+    # Setup MCP Client for GitHub
+    server_params = StdioServerParameters(
+        command="npx",
+        args=["-y", "@modelcontextprotocol/server-github"],
+        env={"GITHUB_PERSONAL_ACCESS_TOKEN": GITHUB_TOKEN or "", **os.environ}
     )
-    
-    print("Worker is listening for jobs on 'incident-investigation-queue'...")
-    
-    try:
-        # Keep the worker running
-        while True:
-            await asyncio.sleep(1)
-    except KeyboardInterrupt:
-        print("\nShutting down worker...")
-        await worker.close()
+
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            print("Connected to GitHub MCP Server!")
+            
+            # Fetch tools from MCP
+            mcp_tools_list = await session.list_tools()
+            
+            # Bind tools
+            bound_tools = [search_runbooks]
+            for t in mcp_tools_list.tools:
+                bound_tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.inputSchema
+                    }
+                })
+
+            # Setup LangGraph
+            class MessagesState(TypedDict):
+                messages: Annotated[list, add_messages]
+
+            llm = ChatGroq(model="llama-3.3-70b-versatile")
+            llm_with_tools = llm.bind_tools(bound_tools)
+
+            def agent_node(state: MessagesState):
+                response = llm_with_tools.invoke(state["messages"])
+                return {"messages": [response]}
+
+            async def tool_node(state: MessagesState):
+                messages = state["messages"]
+                last_message = messages[-1]
+                
+                tool_messages = []
+                for tool_call in last_message.tool_calls:
+                    name = tool_call["name"]
+                    args = tool_call["args"]
+                    
+                    if name == "search_runbooks":
+                        res = search_runbooks.invoke(args)
+                        tool_messages.append(ToolMessage(content=str(res), tool_call_id=tool_call["id"], name=name))
+                    else:
+                        # MCP Tool
+                        try:
+                            result = await session.call_tool(name, arguments=args)
+                            text_content = "\n".join([c.text for c in result.content if getattr(c, "type", "") == "text"])
+                            if getattr(result, "isError", False):
+                                text_content = f"Error: {text_content}"
+                            tool_messages.append(ToolMessage(content=text_content, tool_call_id=tool_call["id"], name=name))
+                        except Exception as e:
+                            tool_messages.append(ToolMessage(content=f"Error executing MCP tool: {e}", tool_call_id=tool_call["id"], name=name))
+                            
+                return {"messages": tool_messages}
+
+            def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+                messages = state["messages"]
+                last_message = messages[-1]
+                if last_message.tool_calls:
+                    return "tools"
+                return "__end__"
+
+            workflow = StateGraph(MessagesState)
+            workflow.add_node("agent", agent_node)
+            workflow.add_node("tools", tool_node)
+            workflow.add_edge(START, "agent")
+            workflow.add_conditional_edges("agent", should_continue)
+            workflow.add_edge("tools", "agent")
+
+            app = workflow.compile()
+
+            # Define the BullMQ process function
+            async def process_incident(job: Job, token: str):
+                print(f"\n[Worker] Picked up job {job.id}")
+                await publish_update(f"Started investigating incident {job.id}...")
+                
+                payload_str = json.dumps(job.data, indent=2)
+                prompt = f"An incident has been reported with the following payload:\n{payload_str}\n\nPlease investigate this using your tools. Be concise and focus on any relevant GitHub PRs or runbooks."
+                
+                messages = [HumanMessage(content=prompt)]
+                
+                try:
+                    # Stream events from LangGraph
+                    async for event in app.astream({"messages": messages}, stream_mode="updates"):
+                        for node, state_update in event.items():
+                            
+                            msgs = state_update.get("messages", [])
+                            if not isinstance(msgs, list):
+                                msgs = [msgs]
+                            
+                            for msg in msgs:
+                                if isinstance(msg, AIMessage):
+                                    if msg.content:
+                                        await publish_update(f"AI: {msg.content}")
+                                    if getattr(msg, 'tool_calls', None):
+                                        for tool_call in msg.tool_calls:
+                                            await publish_update(f"Calling tool '{tool_call['name']}' with args: {tool_call['args']}")
+                                
+                                elif isinstance(msg, ToolMessage):
+                                    # Limit the returned text length so we don't blow up the terminal/redis
+                                    content_str = str(msg.content)
+                                    if len(content_str) > 1500:
+                                        content_str = content_str[:1500] + "... [truncated]"
+                                    await publish_update(f"Tool '{msg.name}' returned: {content_str}")
+
+                except Exception as e:
+                    error_msg = f"Error during investigation: {str(e)}"
+                    print(error_msg)
+                    await publish_update(error_msg)
+                    return {"status": "error", "error": error_msg}
+                
+                await publish_update(f"Investigation complete for job {job.id}.")
+                return {"status": "success"}
+
+            redis_opts = {
+                "host": "localhost",
+                "port": 6379,
+            }
+            
+            worker = Worker(
+                "incident-investigation-queue",
+                process_incident,
+                {"connection": redis_opts}
+            )
+            
+            print("Worker is listening for jobs on 'incident-investigation-queue'...")
+            
+            try:
+                # Keep the worker running
+                while True:
+                    await asyncio.sleep(1)
+            except KeyboardInterrupt:
+                print("\nShutting down worker...")
+                await worker.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
