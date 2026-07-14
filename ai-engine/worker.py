@@ -48,7 +48,7 @@ def search_runbooks(error_type: str) -> str:
         register_vector(conn)
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT content FROM KnowledgeBase ORDER BY embedding <-> %s LIMIT 1;",
+                "SELECT content FROM KnowledgeBase ORDER BY embedding <-> %s::vector LIMIT 1;",
                 (vector,)
             )
             result = cur.fetchone()
