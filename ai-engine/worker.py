@@ -7,7 +7,7 @@ from redis.asyncio import Redis
 
 # LangGraph & LangChain imports
 from typing import Annotated, Literal
-from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, START, END
@@ -169,7 +169,14 @@ async def main():
                 payload_str = json.dumps(job.data, indent=2)
                 prompt = f"An incident has been reported with the following payload:\n{payload_str}\n\nPlease investigate this using your tools. Be concise and focus on any relevant GitHub PRs or runbooks."
                 
-                messages = [HumanMessage(content=prompt)]
+                system_prompt = SystemMessage(content=(
+                    "You are an expert SRE incident investigator. "
+                    "When using GitHub tools, always use 'sreejesh06' as the owner and 'orythm' as the repo. "
+                    "Do not hallucinate company names or repository names. "
+                    "If a tool requires a pull_number, ensure it is an integer, never a string like 'latest'. "
+                    "Be concise and actionable in your analysis."
+                ))
+                messages = [system_prompt, HumanMessage(content=prompt)]
                 
                 try:
                     # Stream events from LangGraph
