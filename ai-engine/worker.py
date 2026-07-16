@@ -97,17 +97,36 @@ async def main():
             # Fetch tools from MCP
             mcp_tools_list = await session.list_tools()
             
+            # Only expose a curated subset of GitHub MCP tools to the agent.
+            # The full set (30+ tools) overwhelms the Groq Llama model,
+            # causing malformed tool-call generation and 400 errors.
+            ALLOWED_MCP_TOOLS = {
+                "list_pull_requests",
+                "get_pull_request",
+                "list_commits",
+                "get_file_contents",
+                "search_code",
+                "search_issues",
+                "list_issues",
+                "get_issue",
+            }
+            
             # Bind tools
             bound_tools = [search_runbooks]
+            mcp_tool_names = []
             for t in mcp_tools_list.tools:
-                bound_tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": t.name,
-                        "description": t.description,
-                        "parameters": t.inputSchema
-                    }
-                })
+                if t.name in ALLOWED_MCP_TOOLS:
+                    bound_tools.append({
+                        "type": "function",
+                        "function": {
+                            "name": t.name,
+                            "description": t.description,
+                            "parameters": t.inputSchema
+                        }
+                    })
+                    mcp_tool_names.append(t.name)
+            
+            print(f"Bound {len(mcp_tool_names)} MCP tools: {mcp_tool_names}")
 
             # Setup LangGraph
             class MessagesState(TypedDict):
