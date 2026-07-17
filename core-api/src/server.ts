@@ -37,10 +37,19 @@ app.post('/api/webhooks/pagerduty', async (req, res) => {
       },
     });
     
+    // Simple configuration dictionary mapping services to GitHub repos
+    const serviceMap: Record<string, string> = {
+      "payment-gateway": "sreejesh06/orythm"
+    };
+
+    const service = payload.service || '';
+    const githubRepo = serviceMap[service] || "sreejesh06/orythm"; // fallback
+
     // Push a job to BullMQ
     await incidentQueue.add('process-incident', {
       incidentId: incident.id,
       payload: payload,
+      github_repo: githubRepo,
     });
     
     console.log(`Incident ${incident.id} created and queued for investigation.`);

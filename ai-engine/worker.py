@@ -188,9 +188,15 @@ async def main():
                 payload_str = json.dumps(job.data, indent=2)
                 prompt = f"An incident has been reported with the following payload:\n{payload_str}\n\nPlease investigate this using your tools. Be concise and focus on any relevant GitHub PRs or runbooks."
                 
+                github_repo = job.data.get("github_repo", "sreejesh06/orythm")
+                if "/" in github_repo:
+                    owner, repo = github_repo.split("/", 1)
+                else:
+                    owner, repo = "sreejesh06", github_repo
+
                 system_prompt = SystemMessage(content=(
                     "You are an expert SRE incident investigator. "
-                    "When using GitHub tools, always use 'sreejesh06' as the owner and 'orythm' as the repo. "
+                    f"When using GitHub tools, always use '{owner}' as the owner and '{repo}' as the repo. "
                     "Do not hallucinate company names or repository names. "
                     "If a tool requires a pull_number, ensure it is an integer, never a string like 'latest'. "
                     "For list_pull_requests, the 'state' parameter must be exactly one of: 'open', 'closed', or 'all'. "
