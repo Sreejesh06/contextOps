@@ -35,5 +35,6 @@ model InvestigationLog {
 model KnowledgeBase {
   id        String                       @id @default(uuid())
   content   String
-  embedding Unsupported("vector(1536)")?
+  metadata  Json?
+  embedding Unsupported("vector(384)")?
 }

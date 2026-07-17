@@ -11,3 +11,4 @@ sentence-transformers
 psycopg2-binary
 pgvector
 mcp
+langchain-text-splitters
