@@ -31,7 +31,7 @@ from pgvector.psycopg2 import register_vector
 from langchain_huggingface import HuggingFaceEmbeddings
 
 # Initialize embedding model for RAG
-print("Loading embeddings model...")
+print("Loading embeddings model...", flush=True)
 embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # ---------------------------------------------------------
@@ -76,11 +76,11 @@ async def publish_update(message_text: str):
 # ---------------------------------------------------------
 async def main():
     if not GROQ_API_KEY:
-        print("WARNING: GROQ_API_KEY environment variable is missing. The agent will fail.")
+        print("WARNING: GROQ_API_KEY environment variable is missing. The agent will fail.", flush=True)
     if not GITHUB_TOKEN:
-        print("WARNING: GITHUB_PERSONAL_ACCESS_TOKEN is missing. MCP GitHub tools may fail.")
+        print("WARNING: GITHUB_PERSONAL_ACCESS_TOKEN is missing. MCP GitHub tools may fail.", flush=True)
 
-    print("Starting AI Brain worker...")
+    print("Starting AI Brain worker...", flush=True)
     
     # Setup MCP Client for GitHub
     server_params = StdioServerParameters(
@@ -92,7 +92,7 @@ async def main():
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
-            print("Connected to GitHub MCP Server!")
+            print("Connected to GitHub MCP Server!", flush=True)
             
             # Fetch tools from MCP
             mcp_tools_list = await session.list_tools()
@@ -126,7 +126,7 @@ async def main():
                     })
                     mcp_tool_names.append(t.name)
             
-            print(f"Bound {len(mcp_tool_names)} MCP tools: {mcp_tool_names}")
+            print(f"Bound {len(mcp_tool_names)} MCP tools: {mcp_tool_names}", flush=True)
 
             # Setup LangGraph
             class MessagesState(TypedDict):
@@ -243,7 +243,7 @@ async def main():
                 {"connection": redis_opts}
             )
             
-            print("Worker is listening for jobs on 'incident-investigation-queue'...")
+            print("Worker is listening for jobs on 'incident-investigation-queue'...", flush=True)
             
             try:
                 # Keep the worker running
