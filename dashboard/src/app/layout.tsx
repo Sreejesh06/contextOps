@@ -1,44 +1,32 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SmoothScroll from "@/components/SmoothScroll";
-import Sidebar from "@/components/Sidebar";
-import { ClerkProvider } from '@clerk/nextjs';
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import AppLayoutWrapper from "@/components/AppLayoutWrapper";
+import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
-  title: "ContextOps - The Glass",
-  description: "Real-time AI incident dashboard",
+  title: "ContextOps — AI Incident Response",
+  description: "Automated incident triage and resolution engine powered by LangGraph and MCP.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex text-white selection:bg-white/30 overflow-hidden">
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      </head>
+      <body
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg-base)",
+          color: "var(--ink)",
+        }}
+      >
         <ClerkProvider>
-          <div className="mesh-gradient-bg"></div>
-          
-          <Sidebar />
-          
-          <main className="flex-1 h-screen overflow-y-auto p-4 lg:p-8 relative">
-            <SmoothScroll>{children}</SmoothScroll>
-          </main>
+          <AppLayoutWrapper>{children}</AppLayoutWrapper>
         </ClerkProvider>
       </body>
     </html>

@@ -11,12 +11,17 @@
   "dependencies": {
     "@clerk/nextjs": "^7.5.18",
     "@studio-freight/react-lenis": "^0.0.47",
+    "@tabler/icons-react": "^3.48.0",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
     "hugeicons-react": "^0.4.0",
     "ldrs": "^1.1.9",
+    "lucide-react": "^1.48.0",
+    "motion": "^13.4.4",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
