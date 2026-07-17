@@ -193,6 +193,8 @@ async def main():
                     "When using GitHub tools, always use 'sreejesh06' as the owner and 'orythm' as the repo. "
                     "Do not hallucinate company names or repository names. "
                     "If a tool requires a pull_number, ensure it is an integer, never a string like 'latest'. "
+                    "For list_pull_requests, the 'state' parameter must be exactly one of: 'open', 'closed', or 'all'. "
+                    "Never use 'merged' as a state value — use 'closed' instead and check the merged status from the results. "
                     "Be concise and actionable in your analysis."
                 ))
                 messages = [system_prompt, HumanMessage(content=prompt)]
