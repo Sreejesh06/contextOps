@@ -1,59 +1,158 @@
-import {
-  DashboardCircleIcon,
-  Alert01Icon,
-  Activity01Icon,
-  Settings01Icon,
-} from "hugeicons-react";
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/cn";
+import {
+  LayoutDashboard,
+  Siren,
+  ServerCog,
+  BellRing,
+  BookText,
+  Users,
+  FileText,
+  BarChart2,
+  Settings,
+  Blocks,
+  Zap,
+} from "lucide-react";
+
+const workspaceItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/incidents", label: "Incidents", icon: Siren },
+  { href: "/alerts", label: "Alerts", icon: BellRing },
+  { href: "/services", label: "Services", icon: ServerCog },
+  { href: "/runbooks", label: "Runbooks", icon: BookText },
+  { href: "/oncall", label: "On-Call", icon: Users },
+];
+
+const analyticsItems = [
+  { href: "/postmortems", label: "Postmortems", icon: FileText },
+  { href: "/insights", label: "Insights", icon: BarChart2 },
+];
+
+const bottomItems = [
+  { href: "/integrations", label: "Integrations", icon: Blocks },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
 
 export default function Sidebar() {
-  return (
-    <aside className="w-20 lg:w-64 h-full glass-panel flex flex-col justify-between py-6 px-4 shrink-0">
-      <div className="flex flex-col items-center lg:items-start gap-12">
-        <div className="w-full flex items-center justify-center lg:justify-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center neon-icon border border-white/20">
-            <span className="font-bold text-lg leading-none mt-1">C</span>
-          </div>
-          <span className="hidden lg:block font-bold text-xl tracking-wider chromatic-text">
-            ContextOps
-          </span>
-        </div>
+  const pathname = usePathname();
 
-        <nav className="w-full flex flex-col gap-6">
-          <Link
-            href="/"
-            className="flex items-center gap-4 text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 group"
-          >
-            <DashboardCircleIcon className="w-6 h-6 group-hover:neon-icon transition-all" />
-            <span className="hidden lg:block font-medium">Dashboard</span>
-          </Link>
-          <Link
-            href="/incidents"
-            className="flex items-center gap-4 text-white p-2 rounded-lg bg-white/10 glass-panel border-white/20"
-          >
-            <Alert01Icon className="w-6 h-6 neon-icon text-red-400" />
-            <span className="hidden lg:block font-medium text-red-50">
-              Active Incident
-            </span>
-          </Link>
-          <Link
-            href="/services"
-            className="flex items-center gap-4 text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 group"
-          >
-            <Activity01Icon className="w-6 h-6 group-hover:neon-icon transition-all" />
-            <span className="hidden lg:block font-medium">Services</span>
-          </Link>
-        </nav>
+  return (
+    <aside
+      className="h-screen flex flex-col shrink-0 border-r"
+      style={{
+        width: "220px",
+        background: "var(--bg-base)",
+        borderColor: "var(--border-subtle)",
+      }}
+    >
+      {/* Logo */}
+      <div
+        className="flex items-center px-6 py-5 border-b"
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
+        <Link href="/dashboard">
+          <Image
+            src="/logo.png"
+            alt="ContextOps"
+            width={140}
+            height={70}
+            className="w-32 h-auto object-contain"
+            priority
+          />
+        </Link>
       </div>
 
-      <div className="w-full flex flex-col gap-4">
-        <Link
-          href="/settings"
-          className="flex items-center gap-4 text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 group"
+      {/* Nav */}
+      <nav className="flex-1 flex flex-col gap-0.5 p-3">
+        <p
+          className="px-3 py-2 text-xs font-bold uppercase tracking-widest"
+          style={{ color: "var(--ink-faint)", fontFamily: "var(--font-mono)" }}
         >
-          <Settings01Icon className="w-6 h-6 group-hover:neon-icon transition-all" />
-          <span className="hidden lg:block font-medium">Settings</span>
-        </Link>
+          Workspace
+        </p>
+        {workspaceItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "nav-link",
+                isActive && "nav-link-active"
+              )}
+            >
+              <Icon
+                size={15}
+                color={isActive ? "var(--ink)" : "var(--ink-muted)"}
+              />
+              <span>{label}</span>
+              {label === "Incidents" && (
+                <span
+                  className="ml-auto text-xs font-mono px-1.5 py-0.5 rounded"
+                  style={{
+                    background: "var(--bg-sunken)",
+                    color: "var(--ink-muted)",
+                    border: "1px solid var(--border-subtle)",
+                  }}
+                >
+                  Live
+                </span>
+              )}
+            </Link>
+          );
+        })}
+
+        <div className="mt-6">
+          <p
+            className="px-3 py-2 text-xs font-bold uppercase tracking-widest"
+            style={{ color: "var(--ink-faint)", fontFamily: "var(--font-mono)" }}
+          >
+            Analytics
+          </p>
+          {analyticsItems.map(({ href, label, icon: Icon }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "nav-link",
+                  isActive && "nav-link-active"
+                )}
+              >
+                <Icon
+                  size={15}
+                  color={isActive ? "var(--ink)" : "var(--ink-muted)"}
+                />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Bottom */}
+      <div
+        className="p-3 border-t flex flex-col gap-0.5"
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
+        {bottomItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn("nav-link", isActive && "nav-link-active")}
+            >
+              <Icon size={15} color="var(--ink-muted)" />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
       </div>
     </aside>
   );

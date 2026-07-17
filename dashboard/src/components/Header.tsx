@@ -1,49 +1,169 @@
-import { Notification02Icon } from "hugeicons-react";
-import { SignInButton, Show, UserButton } from '@clerk/nextjs';
+"use client";
 
-export default function Header() {
+import { SignInButton, Show, UserButton } from "@clerk/nextjs";
+import { useState } from "react";
+import { CheckCheck, Clock, AlertTriangle } from "lucide-react";
+
+type HeaderProps = {
+  incident?: any;
+  onResolve?: () => void;
+};
+
+export default function Header({ incident, onResolve }: HeaderProps) {
+  const [resolving, setResolving] = useState(false);
+  const isResolved = incident?.status === "RESOLVED";
+
+  const handleResolve = async () => {
+    if (!incident?.id || resolving) return;
+    setResolving(true);
+    try {
+      await fetch(`http://localhost:8080/api/incidents/${incident.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "RESOLVED" }),
+      });
+      if (onResolve) onResolve();
+    } catch (e) {
+      console.error("Failed to resolve", e);
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const incidentLabel = incident?.id
+    ? `INC-${incident.id.slice(0, 6).toUpperCase()}`
+    : "—";
+
+  const incidentTitle =
+    incident?.trigger_data?.summary ||
+    incident?.trigger_data?.title ||
+    (incident ? "Active Incident" : "No Active Incident");
+
+  const service =
+    incident?.trigger_data?.service ||
+    incident?.trigger_data?.routing_key ||
+    "—";
+
+  const createdAt = incident?.created_at
+    ? new Date(incident.created_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
   return (
-    <header className="w-full h-20 glass-panel flex items-center justify-between px-8 shrink-0 mb-6 z-10 relative">
-      <div className="flex flex-col">
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse neon-icon"></span>
-          <span className="text-red-400 font-mono text-sm tracking-widest font-semibold uppercase">
-            Incident INC-8092
+    <header
+      className="shrink-0 flex items-center justify-between px-6 py-0 border-b"
+      style={{
+        height: "56px",
+        background: "var(--bg-base)",
+        borderColor: "var(--border-subtle)",
+      }}
+    >
+      {/* Left — incident identity */}
+      <div className="flex items-center gap-3">
+        {incident && (
+          <span
+            className={`lozenge ${
+              isResolved ? "lozenge-resolved" : "lozenge-investigating"
+            }`}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full inline-block"
+              style={{
+                background: isResolved ? "#22c55e" : "#ef4444",
+                animation: isResolved ? "none" : "pulse-dot 1.5s infinite",
+              }}
+            />
+            {isResolved ? "Resolved" : "Investigating"}
+          </span>
+        )}
+
+        <div className="flex flex-col leading-none">
+          <span
+            className="text-xs font-mono"
+            style={{ color: "var(--ink-muted)" }}
+          >
+            {incidentLabel}
+          </span>
+          <span
+            className="text-sm font-semibold mt-0.5"
+            style={{ color: "var(--ink)", fontFamily: "var(--font-ui)" }}
+          >
+            {incidentTitle}
           </span>
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-wide mt-1">
-          PaymentGateway Timeout Surge
-        </h1>
+
+        {service !== "—" && (
+          <>
+            <span
+              className="w-px h-7 shrink-0"
+              style={{ background: "var(--border-subtle)" }}
+            />
+            <div className="flex flex-col leading-none">
+              <span
+                className="text-xs font-mono font-bold uppercase tracking-widest"
+                style={{ color: "var(--ink-faint)" }}
+              >
+                Service
+              </span>
+              <span
+                className="text-xs font-mono mt-0.5"
+                style={{ color: "var(--ink-soft)" }}
+              >
+                {service}
+              </span>
+            </div>
+          </>
+        )}
+
+        {createdAt && (
+          <>
+            <span
+              className="w-px h-7 shrink-0"
+              style={{ background: "var(--border-subtle)" }}
+            />
+            <div
+              className="flex items-center gap-1.5 text-xs"
+              style={{ color: "var(--ink-muted)", fontFamily: "var(--font-mono)" }}
+            >
+              <Clock size={12} />
+              {createdAt}
+            </div>
+          </>
+        )}
+
+        {!incident && (
+          <span className="text-sm" style={{ color: "var(--ink-muted)" }}>
+            Awaiting incident...
+          </span>
+        )}
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex flex-col text-right">
-          <span className="text-white/50 text-xs font-mono uppercase tracking-widest">
-            Failing Service
-          </span>
-          <span className="text-white font-semibold">
-            payment-processor-v2
-          </span>
-        </div>
-        <div className="w-px h-10 bg-white/10 mx-2"></div>
-        <button className="relative w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
-          <Notification02Icon className="w-5 h-5 text-white/80" />
-          <span className="absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full bg-red-500 neon-icon"></span>
-        </button>
-        <div className="w-px h-10 bg-white/10 mx-2"></div>
+      {/* Right — actions + auth */}
+      <div className="flex items-center gap-3">
+        {incident && isResolved && (
+          <div
+            className="flex items-center gap-1.5 text-xs"
+            style={{ color: "#86efac", fontFamily: "var(--font-mono)" }}
+          >
+            <CheckCheck size={12} />
+            Incident Closed
+          </div>
+        )}
+
         <Show when="signed-out">
           <SignInButton mode="modal">
-            <button className="glass-panel px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-colors border border-white/10">
-              Sign In
-            </button>
+            <button className="btn btn-ghost">Sign In</button>
           </SignInButton>
         </Show>
         <Show when="signed-in">
-          <UserButton 
+          <UserButton
             appearance={{
               elements: {
-                userButtonAvatarBox: "w-10 h-10 rounded-xl border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]",
-              }
+                userButtonAvatarBox:
+                  "w-7 h-7 rounded-md border border-white/10",
+              },
             }}
           />
         </Show>
