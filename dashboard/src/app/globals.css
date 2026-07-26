@@ -1,9 +1,21 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: #242423;
+  --color-foreground: #e8eddf;
+  --color-card: #333533;
+  --color-card-foreground: #e8eddf;
+  --color-popover: #333533;
+  --color-popover-foreground: #e8eddf;
+  --color-border: #3e403e;
+  --color-muted: #333533;
+  --color-muted-foreground: #cfdbd5;
+}
+
 /* ─────────────────────────────────────────────
    OpenSourceUI × ADS Dark-Mode Design Tokens
    The visual contract for ContextOps
-───────────────────────────────────────────── */
+ ───────────────────────────────────────────── */
 :root {
   /* Stage — Linear / Vercel Deep Studio Mode */
   --bg-base:        #242423;   /* Elevation 0: True Black */
@@ -14,7 +26,7 @@
   /* Borders — Ultra-thin sleek devtool borders */
   --border-subtle:  #333533;
   --border-default: #cfdbd5;
-  --border-strong:  #333533;
+  --border-strong:  #3e403e;
 
   /* Ink — High Contrast (Vercel style) */
   --ink:            #e8eddf;   /* Text (Primary) */
@@ -27,6 +39,12 @@
   --status-resolved:      #4BCE97; /* Green */
   --status-warning:       #F5CD47; /* Yellow */
   --status-info:          #f5cb5c; /* Blue */
+
+  /* Semantic Ink Aliases */
+  --ink-incident:   #F87168;
+  --ink-healthy:    #4BCE97;
+  --ink-warning:    #F5CD47;
+  --ink-info:       #f5cb5c;
 
   /* Typography — Modern DevTool Stack (Geist/Inter > OS Default) */
   --font-display: "Geist", "Inter", -apple-system, sans-serif;
@@ -45,6 +63,18 @@
   --radius-md: 6px;
   --radius-lg: 10px;
   --radius-xl: 14px;
+
+  /* Shadcn Tooltip & Recharts Variables */
+  --background: 60 5% 14%;      /* 242423 */
+  --foreground: 75 14% 90%;     /* e8eddf */
+  --card: 60 5% 14%;
+  --card-foreground: 75 14% 90%;
+  --popover: 120 1% 20%;        /* 333533 bg-raised */
+  --popover-foreground: 75 14% 90%;
+  --border: 120 1% 20%;         /* 333533 border-subtle */
+  --muted: 120 1% 20%;
+  --muted-foreground: 153 9% 60%;
+  --radius: 0.5rem;
 }
 
 /* ── Reset & Base ───────────────────────────── */

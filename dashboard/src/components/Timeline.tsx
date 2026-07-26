@@ -95,7 +95,7 @@ export default function Timeline({ incident, onNewLog }: Props) {
           if (onNewLog) onNewLog({ id: newMsg.id, message: text, created_at: newMsg.timestamp });
         } catch {
           const newMsg = {
-            id: crypto.randomUUID(), kind: "info",
+            id: crypto.randomUUID(), kind: "info" as const,
             content: e.data, timestamp: new Date().toISOString(),
           };
           setMessages(prev => [...prev, newMsg]);

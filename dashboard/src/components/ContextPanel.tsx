@@ -103,7 +103,11 @@ export default function ContextPanel({ incident }: Props) {
   const markResolved = async () => {
     if (!incident) return;
     setResolving(true);
-    await fetch(`/api/incidents/${incident.id}/resolve`, { method: "POST" });
+    await fetch(`http://localhost:8080/api/incidents/${incident.id}/status`, { 
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "RESOLVED" }),
+    });
     router.refresh();
     setResolving(false);
   };
@@ -154,7 +158,18 @@ export default function ContextPanel({ incident }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
-        
+        {!incident ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 py-16 px-6 text-center">
+            <div className="w-12 h-12 rounded-xl border flex items-center justify-center" style={{ background: "var(--bg-sunken)", borderColor: "var(--border-strong)" }}>
+              <Bot size={20} color="var(--ink-muted)" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1" style={{ color: "var(--ink)" }}>No Context Available</p>
+              <p className="text-xs max-w-sm mx-auto" style={{ color: "var(--ink-muted)" }}>Trigger an incident to see AI-driven context, root cause analysis, and mitigation suggestions.</p>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Atlassian Progress Tracker Pattern */}
         {incident && (
           <div className="flex flex-col gap-5 mb-2">
@@ -350,6 +365,8 @@ export default function ContextPanel({ incident }: Props) {
             />
           )}
         </Section>
+        </>
+        )}
       </div>
     </div>
   );

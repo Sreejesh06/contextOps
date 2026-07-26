@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
-import { RefreshCw, ExternalLink, Siren } from "lucide-react";
+import { RefreshCw, ExternalLink, Siren, Calendar } from "lucide-react";
 import { SpinLoader } from "@/components/loaders/spin-loader";
 import Link from "next/link";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { SegmentedToggleButton } from "@/components/ui/SegmentedToggleButton";
+import { MonthPickerCalendar } from "@/components/ui/MonthPickerCalendar";
+import { SoftPillButton } from "@/components/ui/SoftPillButton";
 
 type Incident = {
   id: string;
@@ -25,6 +29,10 @@ function StatusLozenge({ status }: { status: string }) {
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "investigating" | "resolved">("all");
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const fetchIncidents = async () => {
     setLoading(true);
@@ -39,6 +47,23 @@ export default function IncidentsPage() {
   };
 
   useEffect(() => { fetchIncidents(); }, []);
+
+  const filteredIncidents = incidents.filter(inc => {
+    const title = inc.trigger_data?.summary || inc.trigger_data?.title || "Unnamed Incident";
+    const service = inc.trigger_data?.service || "—";
+    
+    const matchesSearch = title.toLowerCase().includes(search.toLowerCase()) || 
+                          service.toLowerCase().includes(search.toLowerCase()) ||
+                          inc.id.toLowerCase().includes(search.toLowerCase());
+                          
+    const matchesFilter = filter === "all" || 
+                          (filter === "investigating" && inc.status === "INVESTIGATING") || 
+                          (filter === "resolved" && inc.status === "RESOLVED");
+
+    const matchesDate = !selectedDate || new Date(inc.created_at).toDateString() === selectedDate.toDateString();
+                          
+    return matchesSearch && matchesFilter && matchesDate;
+  });
 
   return (
     <div className="w-full h-full flex flex-col" style={{ fontFamily: "var(--font-ui)" }}>
@@ -63,14 +88,60 @@ export default function IncidentsPage() {
             {incidents.length}
           </span>
         </div>
-        <button onClick={fetchIncidents} className="btn btn-ghost">
+        <SoftPillButton variant="light" onClick={fetchIncidents}>
           <RefreshCw size={12} />
           Refresh
-        </button>
+        </SoftPillButton>
       </div>
 
       {/* Table — OpenSourceUI Customers Table pattern, dark-adapted */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6 flex flex-col gap-4">
+        
+        {/* Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 relative">
+            <SearchInput 
+              value={search} 
+              onChange={(val) => setSearch(val)} 
+              placeholder="Search incidents..."
+              containerClassName="w-64"
+            />
+            
+            {/* Date Filter Button */}
+            <button 
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="flex items-center gap-2 h-9 px-3 rounded-lg transition-colors font-mono text-xs font-bold tracking-widest uppercase"
+              style={{ 
+                background: selectedDate ? "var(--ink)" : "var(--bg-overlay)", 
+                color: selectedDate ? "var(--bg-base)" : "var(--ink-muted)",
+                border: "1px solid var(--border-subtle)" 
+              }}
+            >
+              <Calendar size={13} />
+              {selectedDate ? selectedDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Any Date"}
+            </button>
+            
+            {/* Calendar Popover */}
+            {showCalendar && (
+              <div className="absolute left-64 ml-4 top-11 z-50">
+                <MonthPickerCalendar 
+                  onSelect={(date) => {
+                    // Click same date to deselect, or pick new date
+                    setSelectedDate(prev => prev?.toDateString() === date.toDateString() ? null : date);
+                    setShowCalendar(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <SegmentedToggleButton 
+            options={["All", "Investigating", "Resolved"]} 
+            defaultIndex={0}
+            onChange={(idx, val) => setFilter(val.toLowerCase() as "all" | "investigating" | "resolved")}
+          />
+        </div>
+
         <div
           className="rounded-xl overflow-hidden"
           style={{ border: "1px solid var(--border-subtle)" }}
@@ -102,7 +173,7 @@ export default function IncidentsPage() {
               <SpinLoader size="sm" iconClassName="text-[var(--ink-muted)]" />
               Loading incidents...
             </div>
-          ) : incidents.length === 0 ? (
+          ) : filteredIncidents.length === 0 ? (
             <div
               className="py-16 text-center text-xs font-mono"
               style={{ color: "var(--ink-faint)" }}
@@ -110,7 +181,7 @@ export default function IncidentsPage() {
               No incidents found. Trigger one via the webhook to get started.
             </div>
           ) : (
-            incidents.map((inc, i) => {
+            filteredIncidents.map((inc, i) => {
               const title =
                 inc.trigger_data?.summary ||
                 inc.trigger_data?.title ||
@@ -176,7 +247,7 @@ export default function IncidentsPage() {
 
                   <div className="flex justify-end">
                     <Link
-                      href={`/?incident=${inc.id}`}
+                      href={`/dashboard?incident=${inc.id}`}
                       className="btn btn-ghost btn-sm"
                     >
                       <ExternalLink size={11} />

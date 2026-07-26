@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/cn";
 import {
   LayoutDashboard,
@@ -16,29 +16,28 @@ import {
   Settings,
   Blocks,
   Zap,
+  Webhook,
 } from "lucide-react";
 
 const workspaceItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/incidents", label: "Incidents", icon: Siren },
-  { href: "/alerts", label: "Alerts", icon: BellRing },
   { href: "/services", label: "Services", icon: ServerCog },
   { href: "/runbooks", label: "Runbooks", icon: BookText },
-  { href: "/oncall", label: "On-Call", icon: Users },
+  { href: "/settings?tab=integrations", label: "Integrations", icon: Blocks },
+  { href: "/settings?tab=webhooks", label: "Webhooks", icon: Webhook },
+  { href: "/settings?tab=team", label: "Team", icon: Users },
 ];
 
-const analyticsItems = [
-  { href: "/postmortems", label: "Postmortems", icon: FileText },
-  { href: "/insights", label: "Insights", icon: BarChart2 },
-];
+const analyticsItems = [];
 
 const bottomItems = [
-  { href: "/integrations", label: "Integrations", icon: Blocks },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return (
     <aside
@@ -75,7 +74,15 @@ export default function Sidebar() {
           Workspace
         </p>
         {workspaceItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+          const activeTab = searchParams.get("tab") || "general";
+          let isActive = false;
+          if (href.includes("?tab=")) {
+             const tab = href.split("=")[1];
+             isActive = pathname === "/settings" && activeTab === tab;
+          } else {
+             isActive = pathname === href;
+          }
+
           return (
             <Link
               key={href}
@@ -106,33 +113,7 @@ export default function Sidebar() {
           );
         })}
 
-        <div className="mt-6">
-          <p
-            className="px-3 py-2 text-xs font-bold uppercase tracking-widest"
-            style={{ color: "var(--ink-faint)", fontFamily: "var(--font-mono)" }}
-          >
-            Analytics
-          </p>
-          {analyticsItems.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "nav-link",
-                  isActive && "nav-link-active"
-                )}
-              >
-                <Icon
-                  size={15}
-                  color={isActive ? "var(--ink)" : "var(--ink-muted)"}
-                />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
-        </div>
+
       </nav>
 
       {/* Bottom */}
@@ -141,7 +122,9 @@ export default function Sidebar() {
         style={{ borderColor: "var(--border-subtle)" }}
       >
         {bottomItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+          const activeTab = searchParams.get("tab") || "general";
+          const isActive = pathname === "/settings" && activeTab === "general";
+          
           return (
             <Link
               key={href}

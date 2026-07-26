@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Timeline from "./Timeline";
 import ContextPanel from "./ContextPanel";
 import Header from "./Header";
@@ -15,17 +16,24 @@ export type Incident = {
 
 export default function IncidentDashboard() {
   const [incident, setIncident] = useState<Incident | null>(null);
+  const searchParams = useSearchParams();
+  const incidentId = searchParams.get("incident");
 
-  const fetchLatestIncident = async () => {
+  const fetchIncident = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/incidents");
-      if (res.ok) {
-        const list = await res.json();
-        if (list.length > 0) {
-          const detailRes = await fetch(
-            `http://localhost:8080/api/incidents/${list[0].id}`
-          );
-          if (detailRes.ok) setIncident(await detailRes.json());
+      if (incidentId) {
+        // Fetch requested incident
+        const detailRes = await fetch(`http://localhost:8080/api/incidents/${incidentId}`);
+        if (detailRes.ok) setIncident(await detailRes.json());
+      } else {
+        // Fall back to latest incident
+        const res = await fetch("http://localhost:8080/api/incidents");
+        if (res.ok) {
+          const list = await res.json();
+          if (list.length > 0) {
+            const detailRes = await fetch(`http://localhost:8080/api/incidents/${list[0].id}`);
+            if (detailRes.ok) setIncident(await detailRes.json());
+          }
         }
       }
     } catch (e) {
@@ -34,12 +42,12 @@ export default function IncidentDashboard() {
   };
 
   useEffect(() => {
-    fetchLatestIncident();
-  }, []);
+    fetchIncident();
+  }, [incidentId]);
 
   return (
     <div className="flex flex-col" style={{ height: "100vh", overflow: "hidden" }}>
-      <Header incident={incident} onResolve={fetchLatestIncident} />
+      <Header incident={incident} onResolve={fetchIncident} />
       
       {/* 
         ENHANCEMENT: Moving from a constrained fixed-width sidebar to a robust CSS Grid. 
