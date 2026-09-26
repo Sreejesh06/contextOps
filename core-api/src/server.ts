@@ -24,6 +24,18 @@ const connection = process.env.REDIS_URL
 const incidentQueue = new Queue('incident-investigation-queue', {
   connection,
 });
+incidentQueue.on('error', (err) => {
+  console.warn('[BullMQ] Queue warning/connection issue:', err.message);
+});
+
+// Health check endpoints for cloud load balancers (Render, Fly, AWS)
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'contextops-core-api', timestamp: new Date().toISOString() });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', uptime: process.uptime() });
+});
 
 // PagerDuty Webhook Endpoint
 app.post('/api/webhooks/pagerduty', async (req, res) => {
@@ -173,10 +185,10 @@ async function setupRedisSubscriber() {
 setupRedisSubscriber();
 
 // Start the server
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, async () => {
-  console.log(`Core API running on http://localhost:${PORT}`);
-  console.log(`WebSocket server running on ws://localhost:${PORT}`);
+const PORT = Number(process.env.PORT) || 8080;
+server.listen(PORT, '0.0.0.0', async () => {
+  console.log(`Core API running on http://0.0.0.0:${PORT}`);
+  console.log(`WebSocket server running on ws://0.0.0.0:${PORT}`);
   
   try {
     await prisma.$connect();
