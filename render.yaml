@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: contextops-api
+    runtime: node
+    rootDir: core-api
+    plan: free
+    region: singapore
+    buildCommand: npm install && npx prisma generate
+    startCommand: npx tsx src/server.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        value: postgresql://postgres.ynorcsmfzmegxisosjxm:ContextOps2026Pass123!@aws-0-ap-south-1.pooler.supabase.com:5432/postgres

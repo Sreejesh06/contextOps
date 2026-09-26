@@ -13,14 +13,16 @@ app.use(express.json());
 // Initialize Prisma
 const prisma = new PrismaClient();
 
-// Initialize BullMQ Queue connected to local Redis
-const redisOptions = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-};
+// Initialize BullMQ Queue connected to Redis
+const connection = process.env.REDIS_URL
+  ? { url: process.env.REDIS_URL }
+  : {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    };
 
 const incidentQueue = new Queue('incident-investigation-queue', {
-  connection: redisOptions,
+  connection,
 });
 
 // PagerDuty Webhook Endpoint
@@ -128,10 +130,12 @@ wss.on('connection', (ws) => {
 });
 
 // Setup Redis subscriber to broadcast updates to WebSockets
-const redisSubscriber = new Redis({
-  host: redisOptions.host,
-  port: redisOptions.port
-});
+const redisSubscriber = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL)
+  : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    });
 
 redisSubscriber.on('error', (err) => console.error('Redis Subscriber Error', err));
 
