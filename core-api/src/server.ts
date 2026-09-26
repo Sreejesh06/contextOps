@@ -13,20 +13,42 @@ app.use(express.json());
 // Initialize Prisma
 const prisma = new PrismaClient();
 
-// Initialize BullMQ Queue connected to Redis
-const connection = process.env.REDIS_URL
-  ? { url: process.env.REDIS_URL }
-  : {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    };
+// Process-level safety nets to prevent unexpected crashes
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Process] Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught Exception:', err);
+});
 
-const incidentQueue = new Queue('incident-investigation-queue', {
-  connection,
-});
-incidentQueue.on('error', (err) => {
-  console.warn('[BullMQ] Queue warning/connection issue:', err.message);
-});
+// Initialize BullMQ Queue if Redis is available
+const redisConfigured = Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
+let incidentQueue: Queue | null = null;
+
+if (redisConfigured) {
+  try {
+    const connection = process.env.REDIS_URL
+      ? { url: process.env.REDIS_URL }
+      : {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        };
+
+    incidentQueue = new Queue('incident-investigation-queue', {
+      connection: {
+        ...connection,
+        maxRetriesPerRequest: null,
+      },
+    });
+    incidentQueue.on('error', (err) => {
+      console.warn('[BullMQ] Queue warning/connection issue:', err.message);
+    });
+  } catch (err) {
+    console.warn('[BullMQ] Failed to initialize queue:', err);
+  }
+} else {
+  console.log('[BullMQ] No REDIS_URL configured; running in standalone mode.');
+}
 
 // Health check endpoints for cloud load balancers (Render, Fly, AWS)
 app.get('/', (req, res) => {
@@ -69,14 +91,17 @@ app.post('/api/webhooks/pagerduty', async (req, res) => {
     const service = payload.service || '';
     const githubRepo = serviceMap[service] || process.env.DEFAULT_GITHUB_REPO || "sreejesh06/orythm"; // fallback
 
-    // Push a job to BullMQ
-    await incidentQueue.add('process-incident', {
-      incidentId: incident.id,
-      payload: payload,
-      github_repo: githubRepo,
-    });
-    
-    console.log(`Incident ${incident.id} created and queued for investigation.`);
+    // Push a job to BullMQ if queue is available
+    if (incidentQueue) {
+      await incidentQueue.add('process-incident', {
+        incidentId: incident.id,
+        payload: payload,
+        github_repo: githubRepo,
+      });
+      console.log(`Incident ${incident.id} created and queued for investigation.`);
+    } else {
+      console.log(`Incident ${incident.id} created (running in standalone mode without BullMQ).`);
+    }
   } catch (error) {
     console.error('Error processing PagerDuty webhook:', error);
   }
@@ -130,8 +155,7 @@ const server = http.createServer(app);
 
 import Redis from 'ioredis';
 
-// Initialize WebSocket server on the same HTTP server, but user said "on port 8080"
-// I will bind it to the same server that will listen on 8080
+// Initialize WebSocket server on the same HTTP server
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws) => {
@@ -141,48 +165,64 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Setup Redis subscriber to broadcast updates to WebSockets
-const redisSubscriber = process.env.REDIS_URL
-  ? new Redis(process.env.REDIS_URL)
-  : new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    });
+// Setup Redis subscriber if Redis is configured
+let redisSubscriber: Redis | null = null;
 
-redisSubscriber.on('error', (err) => console.error('Redis Subscriber Error', err));
+if (redisConfigured) {
+  try {
+    redisSubscriber = process.env.REDIS_URL
+      ? new Redis(process.env.REDIS_URL, { lazyConnect: true, maxRetriesPerRequest: null })
+      : new Redis({
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+          lazyConnect: true,
+          maxRetriesPerRequest: null,
+        });
 
-async function setupRedisSubscriber() {
-  console.log('Connected to Redis Pub/Sub');
-  
-  await redisSubscriber.subscribe('incident_updates');
-  redisSubscriber.on('message', async (channel, message) => {
-    if (channel === 'incident_updates') {
-      console.log(`[Redis] Received: ${message}`);
-      
+    redisSubscriber.on('error', (err) => console.warn('[Redis Subscriber] Error:', err.message));
+
+    async function setupRedisSubscriber() {
       try {
-        const parsed = JSON.parse(message);
-        if (parsed.incidentId && parsed.message) {
-          await prisma.investigationLog.create({
-            data: {
-              incident_id: parsed.incidentId,
-              message: parsed.message
+        if (!redisSubscriber) return;
+        await redisSubscriber.connect();
+        await redisSubscriber.subscribe('incident_updates');
+        console.log('Connected and subscribed to Redis incident_updates');
+        
+        redisSubscriber.on('message', async (channel, message) => {
+          if (channel === 'incident_updates') {
+            console.log(`[Redis] Received: ${message}`);
+            
+            try {
+              const parsed = JSON.parse(message);
+              if (parsed.incidentId && parsed.message) {
+                await prisma.investigationLog.create({
+                  data: {
+                    incident_id: parsed.incidentId,
+                    message: parsed.message
+                  }
+                });
+              }
+            } catch (e) {
+              console.error('Error parsing or saving investigation log:', e);
             }
-          });
-        }
-      } catch (e) {
-        console.error('Error parsing or saving investigation log:', e);
-      }
 
-      // Broadcast to all connected WebSocket clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === 1) { // WebSocket.OPEN
-          client.send(message);
-        }
-      });
+            // Broadcast to all connected WebSocket clients
+            wss.clients.forEach((client) => {
+              if (client.readyState === 1) { // WebSocket.OPEN
+                client.send(message);
+              }
+            });
+          }
+        });
+      } catch (err) {
+        console.warn('[Redis Subscriber] Subscription could not connect:', err);
+      }
     }
-  });
+    setupRedisSubscriber().catch((err) => console.warn('[Redis Subscriber]', err));
+  } catch (err) {
+    console.warn('[Redis Subscriber] Failed to create Redis instance:', err);
+  }
 }
-setupRedisSubscriber();
 
 // Start the server
 const PORT = Number(process.env.PORT) || 8080;
@@ -201,6 +241,7 @@ server.listen(PORT, '0.0.0.0', async () => {
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
   await prisma.$disconnect();
-  await incidentQueue.close();
+  if (incidentQueue) await incidentQueue.close();
+  if (redisSubscriber) await redisSubscriber.quit();
   process.exit(0);
 });
