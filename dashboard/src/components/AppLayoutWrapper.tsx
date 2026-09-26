@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import Sidebar from "./Sidebar";
 
 export default function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -20,7 +21,9 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
         width: "100vw"
       }}
     >
-      <Sidebar />
+      <Suspense fallback={<aside className="w-[200px] shrink-0 h-screen" style={{ background: "var(--bg-sunken)" }} />}>
+        <Sidebar />
+      </Suspense>
       <main
         style={{
           flex: 1,
